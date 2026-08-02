@@ -9,6 +9,55 @@ import {
 } from "@/lib/frames";
 
 type Mode = "camera" | "preview";
+type CamStatus = "idle" | "starting" | "ready" | "error";
+type CamError = {
+  title: string;
+  message: string;
+  hints: string[];
+  canRetry: boolean;
+};
+
+function describeError(err: unknown): CamError {
+  const name = (err as { name?: string })?.name ?? "";
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const settingsHint = isIOS
+    ? "iPhone / iPad：點網址列左側的「ᴀA」→ 網站設定 → 相機 → 允許，再按下方「重新嘗試」。"
+    : "點網址列左側的鎖頭圖示 → 權限 / 相機 → 允許，再按下方「重新嘗試」。";
+
+  switch (name) {
+    case "NotAllowedError":
+    case "SecurityError":
+      return {
+        title: "相機權限被拒絕",
+        message: "瀏覽器目前封鎖了本網站的相機權限，需要重新授權才能使用拍貼機。",
+        hints: [settingsHint, "若使用 LINE、Facebook 等 App 內建瀏覽器，請改用 Safari 或 Chrome 開啟本頁。"],
+        canRetry: true,
+      };
+    case "NotFoundError":
+    case "OverconstrainedError":
+      return {
+        title: "找不到可用的相機",
+        message: "此裝置沒有偵測到相機，或所選的鏡頭不存在。",
+        hints: ["請試著按「翻轉鏡頭」切換前／後鏡頭。", "確認裝置已連接相機後再重新嘗試。"],
+        canRetry: true,
+      };
+    case "NotReadableError":
+    case "AbortError":
+      return {
+        title: "相機正被其他程式使用",
+        message: "無法讀取相機畫面，可能已被其他 App 或分頁佔用。",
+        hints: ["關閉其他正在使用相機的視訊軟體或分頁。", "關閉後按「重新嘗試」。"],
+        canRetry: true,
+      };
+    default:
+      return {
+        title: "無法開啟相機",
+        message: "發生未預期的問題，請稍後再試一次。",
+        hints: ["重新整理頁面後再開啟拍貼機。"],
+        canRetry: true,
+      };
+  }
+}
 
 export function PhotoBooth() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -21,13 +70,37 @@ export function PhotoBooth() {
   const [mode, setMode] = useState<Mode>("camera");
   const [adjust, setAdjust] = useState<Adjust>(DEFAULT_ADJUST);
   const [result, setResult] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<CamStatus>("idle");
+  const [error, setError] = useState<CamError | null>(null);
 
   const frame = FRAMES[frameIdx]!;
   const mirror = facing === "user";
 
   const startCamera = useCallback(async () => {
     setError(null);
+    setStatus("starting");
+
+    if (typeof window !== "undefined" && !window.isSecureContext) {
+      setStatus("error");
+      setError({
+        title: "連線不安全，無法使用相機",
+        message: "瀏覽器只允許在 HTTPS 網站上使用相機。",
+        hints: ["請改用 https:// 開頭的網址重新開啟本頁。"],
+        canRetry: false,
+      });
+      return;
+    }
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setStatus("error");
+      setError({
+        title: "此瀏覽器不支援相機",
+        message: "目前的瀏覽器無法存取相機功能。",
+        hints: ["請改用最新版的 Safari、Chrome 或 Edge 開啟本頁。"],
+        canRetry: false,
+      });
+      return;
+    }
+
     try {
       streamRef.current?.getTracks().forEach((t) => t.stop());
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -39,8 +112,13 @@ export function PhotoBooth() {
         videoRef.current.srcObject = stream;
         await videoRef.current.play().catch(() => {});
       }
-    } catch {
-      setError("無法開啟相機，請確認已允許瀏覽器使用相機權限。");
+      setStatus("ready");
+    } catch (err) {
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+      setStatus("error");
+      setError(describeError(err));
+      toast.error(describeError(err).title);
     }
   }, [facing]);
 
@@ -48,6 +126,7 @@ export function PhotoBooth() {
     if (mode === "camera") startCamera();
     return () => streamRef.current?.getTracks().forEach((t) => t.stop());
   }, [mode, startCamera]);
+
 
   // re-composite whenever adjustments / frame change in preview mode
   useEffect(() => {
