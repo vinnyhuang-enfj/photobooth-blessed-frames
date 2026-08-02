@@ -63,23 +63,23 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.129 0.042 264.695);
+  --background: oklch(0.98 0.015 80);
+  --foreground: oklch(0.25 0.06 30);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.129 0.042 264.695);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
+  --primary: oklch(0.45 0.17 27);
+  --primary-foreground: oklch(0.98 0.02 85);
   --secondary: oklch(0.968 0.007 247.896);
   --secondary-foreground: oklch(0.208 0.042 265.755);
   --muted: oklch(0.968 0.007 247.896);
   --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
+  --accent: oklch(0.75 0.13 78);
+  --accent-foreground: oklch(0.25 0.06 30);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(0.929 0.013 255.508);
+  --border: oklch(0.88 0.04 70);
   --input: oklch(0.929 0.013 255.508);
   --ring: oklch(0.704 0.04 256.788);
   --chart-1: oklch(0.646 0.222 41.116);
@@ -140,5 +140,37 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+  }
+}
+
+:root {
+  --gradient-hero: linear-gradient(135deg, oklch(0.42 0.18 27), oklch(0.32 0.13 25));
+  --shadow-frame: 0 12px 32px -12px oklch(0.35 0.12 30 / 0.45);
+}
+
+@theme inline {
+  --background-image-gradient-hero: var(--gradient-hero);
+  --shadow-frame: var(--shadow-frame);
+}
+
+@layer components {
+  .btn-gold {
+    border-radius: 9999px;
+    padding: 0.6rem 1.6rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: oklch(0.25 0.06 30);
+    background: linear-gradient(135deg, oklch(0.85 0.12 85), oklch(0.72 0.14 72));
+    box-shadow: var(--shadow-frame);
+  }
+
+  .btn-outline {
+    border-radius: 9999px;
+    padding: 0.6rem 1.6rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    border: 1px solid var(--color-primary);
+    background: transparent;
   }
 }
