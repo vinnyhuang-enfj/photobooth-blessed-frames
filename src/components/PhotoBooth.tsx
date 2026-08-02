@@ -136,13 +136,13 @@ export function PhotoBooth() {
     const img = rawRef.current;
     if (mode !== "preview" || !img) return;
     let alive = true;
-    composite(img, img.naturalWidth, img.naturalHeight, frame.url, adjust).then((url) => {
+    composite(img, img.naturalWidth, img.naturalHeight, frame.overlay, adjust).then((url) => {
       if (alive) setResult(url);
     });
     return () => {
       alive = false;
     };
-  }, [mode, adjust, frame.url]);
+  }, [mode, adjust, frame.overlay]);
 
   const capture = async () => {
     const video = videoRef.current;
@@ -248,7 +248,7 @@ export function PhotoBooth() {
           {/* frame artwork always on top of the camera */}
           {mode === "camera" ? (
             <img
-              src={frame.url}
+              src={frame.overlay}
               alt="活動圖框"
               className="pointer-events-none absolute inset-0 h-full w-full select-none"
             />
