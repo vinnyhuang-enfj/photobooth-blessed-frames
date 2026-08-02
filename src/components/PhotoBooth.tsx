@@ -23,7 +23,7 @@ export function PhotoBooth() {
   const [result, setResult] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const frame = FRAMES[frameIdx];
+  const frame = FRAMES[frameIdx]!;
   const mirror = facing === "user";
 
   const startCamera = useCallback(async () => {
