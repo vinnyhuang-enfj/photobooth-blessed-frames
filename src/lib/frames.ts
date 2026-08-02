@@ -1,5 +1,7 @@
 import frame01 from "@/assets/frame01.png.asset.json";
 import frame02 from "@/assets/frame02.png.asset.json";
+import frame01Hole from "@/assets/frame01-hole.png.asset.json";
+import frame02Hole from "@/assets/frame02-hole.png.asset.json";
 
 export const CANVAS_SIZE = 1254;
 
@@ -14,8 +16,8 @@ export const WINDOW_PCT = {
 };
 
 export const FRAMES = [
-  { id: "frame01", label: "圖框 01", url: frame01.url },
-  { id: "frame02", label: "圖框 02", url: frame02.url },
+  { id: "frame01", label: "圖框 01", url: frame01.url, overlay: frame01Hole.url },
+  { id: "frame02", label: "圖框 02", url: frame02.url, overlay: frame02Hole.url },
 ];
 
 export type Adjust = { zoom: number; offsetX: number; offsetY: number };

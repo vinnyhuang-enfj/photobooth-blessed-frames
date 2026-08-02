@@ -1,4 +1,7 @@
+import { Camera, CameraOff } from "lucide-react";
+import { toast } from "sonner";
 import { useCallback, useEffect, useRef, useState } from "react";
+
 import {
   Adjust,
   DEFAULT_ADJUST,
@@ -9,6 +12,55 @@ import {
 } from "@/lib/frames";
 
 type Mode = "camera" | "preview";
+type CamStatus = "idle" | "starting" | "ready" | "error";
+type CamError = {
+  title: string;
+  message: string;
+  hints: string[];
+  canRetry: boolean;
+};
+
+function describeError(err: unknown): CamError {
+  const name = (err as { name?: string })?.name ?? "";
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const settingsHint = isIOS
+    ? "iPhone / iPad：點網址列左側的「ᴀA」→ 網站設定 → 相機 → 允許，再按下方「重新嘗試」。"
+    : "點網址列左側的鎖頭圖示 → 權限 / 相機 → 允許，再按下方「重新嘗試」。";
+
+  switch (name) {
+    case "NotAllowedError":
+    case "SecurityError":
+      return {
+        title: "相機權限被拒絕",
+        message: "瀏覽器目前封鎖了本網站的相機權限，需要重新授權才能使用拍貼機。",
+        hints: [settingsHint, "若使用 LINE、Facebook 等 App 內建瀏覽器，請改用 Safari 或 Chrome 開啟本頁。"],
+        canRetry: true,
+      };
+    case "NotFoundError":
+    case "OverconstrainedError":
+      return {
+        title: "找不到可用的相機",
+        message: "此裝置沒有偵測到相機，或所選的鏡頭不存在。",
+        hints: ["請試著按「翻轉鏡頭」切換前／後鏡頭。", "確認裝置已連接相機後再重新嘗試。"],
+        canRetry: true,
+      };
+    case "NotReadableError":
+    case "AbortError":
+      return {
+        title: "相機正被其他程式使用",
+        message: "無法讀取相機畫面，可能已被其他 App 或分頁佔用。",
+        hints: ["關閉其他正在使用相機的視訊軟體或分頁。", "關閉後按「重新嘗試」。"],
+        canRetry: true,
+      };
+    default:
+      return {
+        title: "無法開啟相機",
+        message: "發生未預期的問題，請稍後再試一次。",
+        hints: ["重新整理頁面後再開啟拍貼機。"],
+        canRetry: true,
+      };
+  }
+}
 
 export function PhotoBooth() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -21,13 +73,37 @@ export function PhotoBooth() {
   const [mode, setMode] = useState<Mode>("camera");
   const [adjust, setAdjust] = useState<Adjust>(DEFAULT_ADJUST);
   const [result, setResult] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<CamStatus>("idle");
+  const [error, setError] = useState<CamError | null>(null);
 
   const frame = FRAMES[frameIdx]!;
   const mirror = facing === "user";
 
   const startCamera = useCallback(async () => {
     setError(null);
+    setStatus("starting");
+
+    if (typeof window !== "undefined" && !window.isSecureContext) {
+      setStatus("error");
+      setError({
+        title: "連線不安全，無法使用相機",
+        message: "瀏覽器只允許在 HTTPS 網站上使用相機。",
+        hints: ["請改用 https:// 開頭的網址重新開啟本頁。"],
+        canRetry: false,
+      });
+      return;
+    }
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setStatus("error");
+      setError({
+        title: "此瀏覽器不支援相機",
+        message: "目前的瀏覽器無法存取相機功能。",
+        hints: ["請改用最新版的 Safari、Chrome 或 Edge 開啟本頁。"],
+        canRetry: false,
+      });
+      return;
+    }
+
     try {
       streamRef.current?.getTracks().forEach((t) => t.stop());
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -39,8 +115,13 @@ export function PhotoBooth() {
         videoRef.current.srcObject = stream;
         await videoRef.current.play().catch(() => {});
       }
-    } catch {
-      setError("無法開啟相機，請確認已允許瀏覽器使用相機權限。");
+      setStatus("ready");
+    } catch (err) {
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+      setStatus("error");
+      setError(describeError(err));
+      toast.error(describeError(err).title);
     }
   }, [facing]);
 
@@ -49,18 +130,19 @@ export function PhotoBooth() {
     return () => streamRef.current?.getTracks().forEach((t) => t.stop());
   }, [mode, startCamera]);
 
+
   // re-composite whenever adjustments / frame change in preview mode
   useEffect(() => {
     const img = rawRef.current;
     if (mode !== "preview" || !img) return;
     let alive = true;
-    composite(img, img.naturalWidth, img.naturalHeight, frame.url, adjust).then((url) => {
+    composite(img, img.naturalWidth, img.naturalHeight, frame.overlay, adjust).then((url) => {
       if (alive) setResult(url);
     });
     return () => {
       alive = false;
     };
-  }, [mode, adjust, frame.url]);
+  }, [mode, adjust, frame.overlay]);
 
   const capture = async () => {
     const video = videoRef.current;
@@ -144,12 +226,29 @@ export function PhotoBooth() {
                 style={{ transform: mediaTransform }}
               />
             ) : null}
+
+            {mode === "camera" && status !== "ready" && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-6 text-center">
+                {status === "error" ? (
+                  <>
+                    <CameraOff className="h-8 w-8 text-accent" />
+                    <p className="text-sm font-semibold text-accent">{error?.title}</p>
+                    <p className="text-xs text-accent/80">請依下方說明重新授權相機</p>
+                  </>
+                ) : (
+                  <>
+                    <Camera className="h-8 w-8 animate-pulse text-accent" />
+                    <p className="text-xs text-accent/80">正在啟動相機，請於跳出的視窗按「允許」</p>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           {/* frame artwork always on top of the camera */}
           {mode === "camera" ? (
             <img
-              src={frame.url}
+              src={frame.overlay}
               alt="活動圖框"
               className="pointer-events-none absolute inset-0 h-full w-full select-none"
             />
@@ -159,7 +258,28 @@ export function PhotoBooth() {
         </div>
       </div>
 
-      {error && <p className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
+      {error && (
+        <div className="space-y-3 rounded-xl border border-destructive/30 bg-destructive/10 p-4">
+          <p className="text-sm font-bold text-destructive">{error.title}</p>
+          <p className="text-xs text-foreground/80">{error.message}</p>
+          <ul className="list-disc space-y-1 pl-5 text-xs text-foreground/80">
+            {error.hints.map((h) => (
+              <li key={h}>{h}</li>
+            ))}
+          </ul>
+          <div className="flex flex-wrap gap-2">
+            {error.canRetry && (
+              <button onClick={startCamera} className="btn-gold" disabled={status === "starting"}>
+                {status === "starting" ? "重新連線中…" : "重新嘗試"}
+              </button>
+            )}
+            <button onClick={() => window.location.reload()} className="btn-outline">
+              重新整理頁面
+            </button>
+          </div>
+        </div>
+      )}
+
 
       <div>
         <p className="mb-2 text-sm font-semibold text-foreground">圖框樣式</p>
@@ -195,7 +315,10 @@ export function PhotoBooth() {
       <div className="flex flex-wrap justify-center gap-3 pb-8">
         {mode === "camera" ? (
           <>
-            <button onClick={capture} className="btn-gold">拍照</button>
+            <button onClick={capture} className="btn-gold disabled:opacity-50" disabled={status !== "ready"}>
+              拍照
+            </button>
+
             <button
               onClick={() => setFacing((f) => (f === "user" ? "environment" : "user"))}
               className="btn-outline"
