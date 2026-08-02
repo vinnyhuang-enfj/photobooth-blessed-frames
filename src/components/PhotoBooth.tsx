@@ -223,6 +223,23 @@ export function PhotoBooth() {
                 style={{ transform: mediaTransform }}
               />
             ) : null}
+
+            {mode === "camera" && status !== "ready" && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-6 text-center">
+                {status === "error" ? (
+                  <>
+                    <CameraOff className="h-8 w-8 text-accent" />
+                    <p className="text-sm font-semibold text-accent">{error?.title}</p>
+                    <p className="text-xs text-accent/80">請依下方說明重新授權相機</p>
+                  </>
+                ) : (
+                  <>
+                    <Camera className="h-8 w-8 animate-pulse text-accent" />
+                    <p className="text-xs text-accent/80">正在啟動相機，請於跳出的視窗按「允許」</p>
+                  </>
+                )}
+              </div>
+            )}
           </div>
 
           {/* frame artwork always on top of the camera */}
@@ -238,7 +255,28 @@ export function PhotoBooth() {
         </div>
       </div>
 
-      {error && <p className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</p>}
+      {error && (
+        <div className="space-y-3 rounded-xl border border-destructive/30 bg-destructive/10 p-4">
+          <p className="text-sm font-bold text-destructive">{error.title}</p>
+          <p className="text-xs text-foreground/80">{error.message}</p>
+          <ul className="list-disc space-y-1 pl-5 text-xs text-foreground/80">
+            {error.hints.map((h) => (
+              <li key={h}>{h}</li>
+            ))}
+          </ul>
+          <div className="flex flex-wrap gap-2">
+            {error.canRetry && (
+              <button onClick={startCamera} className="btn-gold" disabled={status === "starting"}>
+                {status === "starting" ? "重新連線中…" : "重新嘗試"}
+              </button>
+            )}
+            <button onClick={() => window.location.reload()} className="btn-outline">
+              重新整理頁面
+            </button>
+          </div>
+        </div>
+      )}
+
 
       <div>
         <p className="mb-2 text-sm font-semibold text-foreground">圖框樣式</p>
