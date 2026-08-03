@@ -282,12 +282,15 @@ export function PhotoBooth() {
 
 
       {mode === "camera" && (
-        <div className="flex justify-center">
+        <div className="flex justify-center gap-3">
           <button
             onClick={() => setFacing((f) => (f === "user" ? "environment" : "user"))}
             className="btn-outline"
           >
             翻轉鏡頭
+          </button>
+          <button onClick={capture} className="btn-gold disabled:opacity-50" disabled={status !== "ready"}>
+            拍照
           </button>
         </div>
       )}
