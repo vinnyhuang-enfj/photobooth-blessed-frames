@@ -6,7 +6,7 @@ import frame02Hole from "@/assets/frame02-hole.png.asset.json";
 export const CANVAS_SIZE = 1254;
 
 /** Black photo window measured from the frame artwork (px, in a 1254x1254 canvas). */
-export const WINDOW = { x: 144, y: 164, w: 916, h: 900 };
+export const WINDOW = { x: 144, y: 164, w: 964, h: 900 };
 
 export const WINDOW_PCT = {
   left: (WINDOW.x / CANVAS_SIZE) * 100,
