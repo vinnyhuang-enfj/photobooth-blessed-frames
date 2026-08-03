@@ -282,12 +282,15 @@ export function PhotoBooth() {
 
 
       {mode === "camera" && (
-        <div className="flex justify-center">
+        <div className="flex justify-center gap-3">
           <button
             onClick={() => setFacing((f) => (f === "user" ? "environment" : "user"))}
             className="btn-outline"
           >
             翻轉鏡頭
+          </button>
+          <button onClick={capture} className="btn-gold disabled:opacity-50" disabled={status !== "ready"}>
+            拍照
           </button>
         </div>
       )}
@@ -324,11 +327,7 @@ export function PhotoBooth() {
       </div>
 
       <div className="flex flex-wrap justify-center gap-3 pb-8">
-        {mode === "camera" ? (
-          <button onClick={capture} className="btn-gold disabled:opacity-50" disabled={status !== "ready"}>
-            拍照
-          </button>
-        ) : (
+        {mode === "preview" && (
           <>
             <button onClick={save} className="btn-gold">儲存照片</button>
             <button onClick={retake} className="btn-outline">重新拍照</button>
