@@ -295,23 +295,25 @@ export function PhotoBooth() {
         </div>
       )}
 
-      <div>
-        <p className="mb-2 text-sm font-semibold text-foreground">圖框樣式</p>
-        <div className="grid grid-cols-2 gap-3">
-          {FRAMES.map((f, i) => (
-            <button
-              key={f.id}
-              onClick={() => setFrameIdx(i)}
-              className={`overflow-hidden rounded-xl border-2 transition ${
-                i === frameIdx ? "border-primary shadow-frame" : "border-border opacity-80"
-              }`}
-            >
-              <img src={f.url} alt={f.label} className="aspect-square w-full object-cover" />
-              <span className="block bg-card py-1 text-xs text-card-foreground">{f.label}</span>
-            </button>
-          ))}
+      {mode === "camera" && (
+        <div>
+          <p className="mb-2 text-sm font-semibold text-foreground">圖框樣式</p>
+          <div className="grid grid-cols-2 gap-3">
+            {FRAMES.map((f, i) => (
+              <button
+                key={f.id}
+                onClick={() => setFrameIdx(i)}
+                className={`overflow-hidden rounded-xl border-2 transition ${
+                  i === frameIdx ? "border-primary shadow-frame" : "border-border opacity-80"
+                }`}
+              >
+                <img src={f.url} alt={f.label} className="aspect-square w-full object-cover" />
+                <span className="block bg-card py-1 text-xs text-card-foreground">{f.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="space-y-3 rounded-xl bg-card p-4 shadow-frame">
         <p className="text-sm font-semibold text-card-foreground">對位微調（可直接拖曳畫面）</p>
