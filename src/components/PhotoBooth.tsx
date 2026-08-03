@@ -222,7 +222,7 @@ export function PhotoBooth() {
                 playsInline
                 muted
                 autoPlay
-                className="h-full w-full object-contain"
+                className="h-full w-full object-cover"
                 style={{ transform: mediaTransform }}
               />
             ) : null}
