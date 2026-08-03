@@ -6,7 +6,7 @@ import frame02Hole from "@/assets/frame02-hole.png.asset.json";
 export const CANVAS_SIZE = 1254;
 
 /** Black photo window measured from the frame artwork (px, in a 1254x1254 canvas). */
-export const WINDOW = { x: 144, y: 164, w: 964, h: 900 };
+export const WINDOW = { x: 144, y: 164, w: 916, h: 900 };
 
 export const WINDOW_PCT = {
   left: (WINDOW.x / CANVAS_SIZE) * 100,
@@ -24,9 +24,9 @@ export type Adjust = { zoom: number; offsetX: number; offsetY: number };
 
 export const DEFAULT_ADJUST: Adjust = { zoom: 1, offsetX: 0, offsetY: 0 };
 
-/** contain-fit so the photo is never cropped, plus zoom/offset fine tuning */
+/** cover-fit so the photo always fills the black window, plus zoom/offset fine tuning */
 export function computeFit(sw: number, sh: number, adjust: Adjust) {
-  const base = Math.min(WINDOW.w / sw, WINDOW.h / sh);
+  const base = Math.max(WINDOW.w / sw, WINDOW.h / sh);
   const scale = base * adjust.zoom;
   const dw = sw * scale;
   const dh = sh * scale;
