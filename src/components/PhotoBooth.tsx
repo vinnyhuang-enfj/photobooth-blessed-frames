@@ -6,7 +6,7 @@ import {
   Adjust,
   DEFAULT_ADJUST,
   FRAMES,
-  WINDOW_PCT,
+  windowPct,
   composite,
   loadImage,
 } from "@/lib/frames";
@@ -136,13 +136,13 @@ export function PhotoBooth() {
     const img = rawRef.current;
     if (mode !== "preview" || !img) return;
     let alive = true;
-    composite(img, img.naturalWidth, img.naturalHeight, frame.overlay, adjust).then((url) => {
+    composite(img, img.naturalWidth, img.naturalHeight, frame, adjust).then((url) => {
       if (alive) setResult(url);
     });
     return () => {
       alive = false;
     };
-  }, [mode, adjust, frame.overlay]);
+  }, [mode, adjust, frame]);
 
   const capture = async () => {
     const video = videoRef.current;
@@ -194,11 +194,12 @@ export function PhotoBooth() {
     dragRef.current = null;
   };
 
+  const pct = windowPct(frame);
   const windowStyle = {
-    left: `${WINDOW_PCT.left}%`,
-    top: `${WINDOW_PCT.top}%`,
-    width: `${WINDOW_PCT.width}%`,
-    height: `${WINDOW_PCT.height}%`,
+    left: `${pct.left}%`,
+    top: `${pct.top}%`,
+    width: `${pct.width}%`,
+    height: `${pct.height}%`,
   };
 
   const mediaTransform = `translate(${adjust.offsetX * 100}%, ${adjust.offsetY * 100}%) scale(${adjust.zoom})${mirror && mode === "camera" ? " scaleX(-1)" : ""}`;
