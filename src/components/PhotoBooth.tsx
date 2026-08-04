@@ -207,7 +207,7 @@ export function PhotoBooth() {
   return (
     <div className="mx-auto w-full max-w-lg space-y-5">
       <div className="relative w-full overflow-hidden rounded-2xl bg-card shadow-frame">
-        <div className="relative aspect-square w-full">
+        <div className="relative w-full" style={{ aspectRatio: `${frame.canvas.w} / ${frame.canvas.h}` }}>
           {/* photo window (behind the frame artwork) */}
           <div
             className="absolute overflow-hidden rounded-xl bg-black touch-none cursor-grab active:cursor-grabbing"
@@ -308,7 +308,7 @@ export function PhotoBooth() {
                   i === frameIdx ? "border-primary shadow-frame" : "border-border opacity-80"
                 }`}
               >
-                <img src={f.url} alt={f.label} className="aspect-square w-full object-cover" />
+                <img src={f.url} alt={f.label} className="aspect-square w-full bg-card object-contain" />
                 <span className="block bg-card py-1 text-xs text-card-foreground">{f.label}</span>
               </button>
             ))}
