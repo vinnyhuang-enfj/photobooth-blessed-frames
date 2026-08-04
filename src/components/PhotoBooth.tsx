@@ -6,7 +6,7 @@ import {
   Adjust,
   DEFAULT_ADJUST,
   FRAMES,
-  WINDOW_PCT,
+  windowPct,
   composite,
   loadImage,
 } from "@/lib/frames";
@@ -136,13 +136,13 @@ export function PhotoBooth() {
     const img = rawRef.current;
     if (mode !== "preview" || !img) return;
     let alive = true;
-    composite(img, img.naturalWidth, img.naturalHeight, frame.overlay, adjust).then((url) => {
+    composite(img, img.naturalWidth, img.naturalHeight, frame, adjust).then((url) => {
       if (alive) setResult(url);
     });
     return () => {
       alive = false;
     };
-  }, [mode, adjust, frame.overlay]);
+  }, [mode, adjust, frame]);
 
   const capture = async () => {
     const video = videoRef.current;
@@ -194,11 +194,12 @@ export function PhotoBooth() {
     dragRef.current = null;
   };
 
+  const pct = windowPct(frame);
   const windowStyle = {
-    left: `${WINDOW_PCT.left}%`,
-    top: `${WINDOW_PCT.top}%`,
-    width: `${WINDOW_PCT.width}%`,
-    height: `${WINDOW_PCT.height}%`,
+    left: `${pct.left}%`,
+    top: `${pct.top}%`,
+    width: `${pct.width}%`,
+    height: `${pct.height}%`,
   };
 
   const mediaTransform = `translate(${adjust.offsetX * 100}%, ${adjust.offsetY * 100}%) scale(${adjust.zoom})${mirror && mode === "camera" ? " scaleX(-1)" : ""}`;
@@ -206,7 +207,7 @@ export function PhotoBooth() {
   return (
     <div className="mx-auto w-full max-w-lg space-y-5">
       <div className="relative w-full overflow-hidden rounded-2xl bg-card shadow-frame">
-        <div className="relative aspect-square w-full">
+        <div className="relative w-full" style={{ aspectRatio: `${frame.canvas.w} / ${frame.canvas.h}` }}>
           {/* photo window (behind the frame artwork) */}
           <div
             className="absolute overflow-hidden rounded-xl bg-black touch-none cursor-grab active:cursor-grabbing"
@@ -307,7 +308,7 @@ export function PhotoBooth() {
                   i === frameIdx ? "border-primary shadow-frame" : "border-border opacity-80"
                 }`}
               >
-                <img src={f.url} alt={f.label} className="aspect-square w-full object-cover" />
+                <img src={f.url} alt={f.label} className="aspect-square w-full bg-card object-contain" />
                 <span className="block bg-card py-1 text-xs text-card-foreground">{f.label}</span>
               </button>
             ))}
