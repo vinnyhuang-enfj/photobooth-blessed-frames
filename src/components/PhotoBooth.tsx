@@ -299,7 +299,7 @@ export function PhotoBooth() {
       {mode === "camera" && (
         <div>
           <p className="mb-2 text-sm font-semibold text-foreground">圖框樣式</p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             {FRAMES.map((f, i) => (
               <button
                 key={f.id}
