@@ -40,7 +40,7 @@ function Index() {
         {(
           [
             ["event", "活動內容"],
-            ["booth", "拍貼機"],
+            ["booth", "與大師合影"],
           ] as const
         ).map(([key, label]) => (
           <button
