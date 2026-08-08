@@ -10,13 +10,14 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "2026 國際佛光會世界會員代表大會活動網站，查看 10/2–10/6 活動內容，並使用拍貼機拍攝專屬紀念圖框照片。",
+          "2026 國際佛光會世界會員代表大會活動網站，查看 10/2–10/6 活動內容，並使用「與大師合影」拍攝專屬紀念圖框照片。",
       },
       { property: "og:title", content: "2026 國際佛光會世界會員代表大會" },
       {
         property: "og:description",
-        content: "活動內容與線上拍貼機，留下屬於你的和諧與和平紀念照。",
+        content: "活動內容與線上「與大師合影」，留下屬於你的和諧與和平紀念照。",
       },
+
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -40,7 +41,7 @@ function Index() {
         {(
           [
             ["event", "活動內容"],
-            ["booth", "拍貼機"],
+            ["booth", "與大師合影"],
           ] as const
         ).map(([key, label]) => (
           <button
