@@ -206,11 +206,11 @@ export function PhotoBooth() {
 
   return (
     <div className="mx-auto w-full max-w-lg space-y-5">
-      <div className="relative w-full overflow-hidden rounded-2xl bg-card shadow-frame">
+      <div className="relative w-full bg-card shadow-frame">
         <div className="relative w-full" style={{ aspectRatio: `${frame.canvas.w} / ${frame.canvas.h}` }}>
           {/* photo window (behind the frame artwork) */}
           <div
-            className="absolute overflow-hidden rounded-xl bg-black touch-none cursor-grab active:cursor-grabbing"
+            className="absolute overflow-hidden bg-black touch-none cursor-grab active:cursor-grabbing"
             style={windowStyle}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
@@ -251,10 +251,12 @@ export function PhotoBooth() {
             <img
               src={frame.overlay}
               alt="活動圖框"
-              className="pointer-events-none absolute inset-0 h-full w-full select-none"
+              className="pointer-events-none absolute inset-0 h-full w-full select-none object-contain"
             />
           ) : (
-            result && <img src={result} alt="合成預覽" className="absolute inset-0 h-full w-full" />
+            result && (
+              <img src={result} alt="合成預覽" className="absolute inset-0 h-full w-full object-contain" />
+            )
           )}
         </div>
       </div>
