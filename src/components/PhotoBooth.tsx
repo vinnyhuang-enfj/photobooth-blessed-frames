@@ -254,7 +254,7 @@ export function PhotoBooth() {
             <img
               src={frame.overlay}
               alt="活動圖框"
-              className="pointer-events-none absolute inset-0 h-full w-full select-none object-contain"
+              className="pointer-events-none absolute inset-0 z-10 h-full w-full select-none object-contain"
             />
           ) : (
             result && (
