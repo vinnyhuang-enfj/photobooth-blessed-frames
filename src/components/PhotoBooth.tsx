@@ -195,11 +195,14 @@ export function PhotoBooth() {
   };
 
   const pct = windowPct(frame);
+  // bleed slightly outward so the frame border always overlaps the camera edge
+  const bleedX = pct.width * 0.02;
+  const bleedY = pct.height * 0.02;
   const windowStyle = {
-    left: `${pct.left}%`,
-    top: `${pct.top}%`,
-    width: `${pct.width}%`,
-    height: `${pct.height}%`,
+    left: `${pct.left - bleedX}%`,
+    top: `${pct.top - bleedY}%`,
+    width: `${pct.width + bleedX * 2}%`,
+    height: `${pct.height + bleedY * 2}%`,
   };
 
   const mediaTransform = `translate(${adjust.offsetX * 100}%, ${adjust.offsetY * 100}%) scale(${adjust.zoom})${mirror && mode === "camera" ? " scaleX(-1)" : ""}`;
@@ -251,7 +254,7 @@ export function PhotoBooth() {
             <img
               src={frame.overlay}
               alt="活動圖框"
-              className="pointer-events-none absolute inset-0 h-full w-full select-none object-contain"
+              className="pointer-events-none absolute inset-0 z-10 h-full w-full select-none object-contain"
             />
           ) : (
             result && (
