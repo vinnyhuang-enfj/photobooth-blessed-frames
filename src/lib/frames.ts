@@ -122,11 +122,8 @@ export async function composite(
   canvas.width = frame.canvas.w;
   canvas.height = frame.canvas.h;
   const ctx = canvas.getContext("2d")!;
-  const base = frame.window;
-  // bleed outward so the frame artwork always overlaps the photo edges
-  const bx = base.w * 0.02;
-  const by = base.h * 0.02;
-  const win: Rect = { x: base.x - bx, y: base.y - by, w: base.w + bx * 2, h: base.h + by * 2 };
+  // keep the photo strictly inside the window so the frame border stays visible
+  const win: Rect = { ...frame.window };
   ctx.fillStyle = "#000";
   ctx.fillRect(win.x, win.y, win.w, win.h);
 
