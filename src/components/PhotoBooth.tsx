@@ -195,14 +195,12 @@ export function PhotoBooth() {
   };
 
   const pct = windowPct(frame);
-  // bleed slightly outward so the frame border always overlaps the camera edge
-  const bleedX = pct.width * 0.02;
-  const bleedY = pct.height * 0.02;
+  // keep the camera strictly inside the window so the frame border stays visible
   const windowStyle = {
-    left: `${pct.left - bleedX}%`,
-    top: `${pct.top - bleedY}%`,
-    width: `${pct.width + bleedX * 2}%`,
-    height: `${pct.height + bleedY * 2}%`,
+    left: `${pct.left}%`,
+    top: `${pct.top}%`,
+    width: `${pct.width}%`,
+    height: `${pct.height}%`,
   };
 
   const mediaTransform = `translate(${adjust.offsetX * 100}%, ${adjust.offsetY * 100}%) scale(${adjust.zoom})${mirror && mode === "camera" ? " scaleX(-1)" : ""}`;
