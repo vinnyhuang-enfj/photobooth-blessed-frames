@@ -6,12 +6,14 @@ import {
   Adjust,
   DEFAULT_ADJUST,
   FRAMES,
+  Frame,
   windowPct,
   composite,
+  drawComposite,
   loadImage,
 } from "@/lib/frames";
 
-type Mode = "camera" | "preview";
+type Mode = "camera" | "preview" | "video";
 type CamStatus = "idle" | "starting" | "ready" | "error";
 type CamError = {
   title: string;
@@ -75,9 +77,21 @@ export function PhotoBooth() {
   const [result, setResult] = useState<string | null>(null);
   const [status, setStatus] = useState<CamStatus>("idle");
   const [error, setError] = useState<CamError | null>(null);
+  const [recording, setRecording] = useState(false);
+  const [countdown, setCountdown] = useState(10);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
   const frame = FRAMES[frameIdx]!;
   const mirror = facing === "user";
+
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<BlobPart[]>([]);
+  const rafRef = useRef<number | null>(null);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const liveRef = useRef<{ frame: Frame; adjust: Adjust; mirror: boolean }>({ frame, adjust, mirror });
+  liveRef.current = { frame, adjust, mirror };
+  const videoExtRef = useRef("mp4");
+
 
   const startCamera = useCallback(async () => {
     setError(null);
@@ -165,6 +179,126 @@ export function PhotoBooth() {
     setResult(null);
     setMode("camera");
   };
+
+  const cleanupRecording = () => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
+    timersRef.current.forEach(clearTimeout);
+    timersRef.current = [];
+  };
+
+  const stopRecording = useCallback(() => {
+    const rec = recorderRef.current;
+    if (rec && rec.state !== "inactive") rec.stop();
+  }, []);
+
+  const startRecording = async () => {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth || recording) return;
+    if (typeof MediaRecorder === "undefined") {
+      toast.error("此瀏覽器不支援錄影功能");
+      return;
+    }
+
+    const overlay = await loadImage(frame.overlay);
+    const cw = frame.canvas.w;
+    const ch = frame.canvas.h;
+    const scale = Math.min(1, 720 / Math.max(cw, ch));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(cw * scale);
+    canvas.height = Math.round(ch * scale);
+    const ctx = canvas.getContext("2d")!;
+
+    const draw = () => {
+      ctx.setTransform(scale, 0, 0, scale, 0, 0);
+      const { frame: f, adjust: a, mirror: m } = liveRef.current;
+      drawComposite(ctx, video, video.videoWidth, video.videoHeight, f, a, overlay, m);
+      rafRef.current = requestAnimationFrame(draw);
+    };
+    draw();
+
+    const candidates = [
+      "video/mp4;codecs=avc1",
+      "video/mp4",
+      "video/webm;codecs=vp9",
+      "video/webm;codecs=vp8",
+      "video/webm",
+    ];
+    const mime = candidates.find((t) => MediaRecorder.isTypeSupported?.(t)) ?? "";
+    videoExtRef.current = mime.includes("mp4") ? "mp4" : "webm";
+
+    const stream = canvas.captureStream(30);
+    const rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+    chunksRef.current = [];
+    rec.ondataavailable = (e) => {
+      if (e.data.size) chunksRef.current.push(e.data);
+    };
+    rec.onstop = () => {
+      cleanupRecording();
+      setRecording(false);
+      const blob = new Blob(chunksRef.current, { type: mime || "video/webm" });
+      setVideoUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return URL.createObjectURL(blob);
+      });
+      setMode("video");
+      toast.success("錄影完成");
+    };
+    recorderRef.current = rec;
+    rec.start();
+    setRecording(true);
+    setCountdown(10);
+
+    for (let s = 1; s <= 10; s++) {
+      timersRef.current.push(setTimeout(() => setCountdown(10 - s), s * 1000));
+    }
+    timersRef.current.push(setTimeout(() => stopRecording(), 10_000));
+  };
+
+  useEffect(() => cleanupRecording, []);
+
+  const videoFileName = () => `BLIA2026-${Date.now()}.${videoExtRef.current}`;
+
+  const saveVideo = () => {
+    if (!videoUrl) return;
+    const a = document.createElement("a");
+    a.href = videoUrl;
+    a.download = videoFileName();
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
+  const shareVideo = async () => {
+    if (!videoUrl) return;
+    try {
+      const blob = await (await fetch(videoUrl)).blob();
+      const file = new File([blob], videoFileName(), { type: blob.type || "video/mp4" });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: "2026國際佛光會 與大師合影",
+          text: "2026國際佛光會 世界會員代表大會｜與大師合影",
+        });
+        return;
+      }
+      throw new Error("unsupported");
+    } catch (err) {
+      if ((err as { name?: string })?.name === "AbortError") return;
+      toast.error("此瀏覽器不支援直接分享影片", {
+        description: "請先按「儲存錄影」，再到 LINE、Facebook、Instagram 或 Gmail 附上影片分享。",
+      });
+    }
+  };
+
+  const reRecord = () => {
+    setVideoUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setMode("camera");
+  };
+
 
   const fileName = () => `BLIA2026-${Date.now()}.png`;
 
@@ -288,16 +422,36 @@ export function PhotoBooth() {
 
           {/* frame artwork always on top of the camera */}
           {mode === "camera" ? (
-            <img
-              src={frame.overlay}
-              alt="活動圖框"
-              className="pointer-events-none absolute inset-0 z-10 h-full w-full select-none object-contain"
-            />
+            <>
+              <img
+                src={frame.overlay}
+                alt="活動圖框"
+                className="pointer-events-none absolute inset-0 z-10 h-full w-full select-none object-contain"
+              />
+              {recording && (
+                <div className="pointer-events-none absolute left-1/2 top-3 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full bg-destructive px-3 py-1 text-xs font-bold text-destructive-foreground">
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
+                  錄影中 {countdown}s
+                </div>
+              )}
+            </>
+          ) : mode === "video" ? (
+            videoUrl && (
+              <video
+                src={videoUrl}
+                controls
+                autoPlay
+                loop
+                playsInline
+                className="absolute inset-0 h-full w-full object-contain"
+              />
+            )
           ) : (
             result && (
               <img src={result} alt="合成預覽" className="absolute inset-0 h-full w-full object-contain" />
             )
           )}
+
         </div>
       </div>
 
@@ -325,20 +479,35 @@ export function PhotoBooth() {
 
 
       {mode === "camera" && (
-        <div className="flex justify-center gap-3">
-          <button
-            onClick={() => setFacing((f) => (f === "user" ? "environment" : "user"))}
-            className="btn-outline"
-          >
-            翻轉鏡頭
-          </button>
-          <button onClick={capture} className="btn-gold disabled:opacity-50" disabled={status !== "ready"}>
-            拍照
-          </button>
+        <div className="flex flex-wrap justify-center gap-3">
+          {recording ? (
+            <button onClick={stopRecording} className="btn-gold">
+              結束錄影
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={() => setFacing((f) => (f === "user" ? "environment" : "user"))}
+                className="btn-outline"
+              >
+                翻轉鏡頭
+              </button>
+              <button onClick={capture} className="btn-gold disabled:opacity-50" disabled={status !== "ready"}>
+                拍照
+              </button>
+              <button
+                onClick={startRecording}
+                className="btn-gold disabled:opacity-50"
+                disabled={status !== "ready"}
+              >
+                錄影
+              </button>
+            </>
+          )}
         </div>
       )}
 
-      {mode === "camera" && (
+      {mode === "camera" && !recording && (
         <div>
           <p className="mb-2 text-sm font-semibold text-foreground">圖框樣式</p>
           <div className="grid grid-cols-3 gap-3">
@@ -357,6 +526,7 @@ export function PhotoBooth() {
           </div>
         </div>
       )}
+
 
       <div className="space-y-3 rounded-xl bg-card p-4 shadow-frame">
         <p className="text-sm font-semibold text-card-foreground">對位微調（可直接拖曳畫面）</p>
@@ -379,7 +549,15 @@ export function PhotoBooth() {
             <button onClick={retake} className="btn-outline">重新拍照</button>
           </>
         )}
+        {mode === "video" && (
+          <>
+            <button onClick={saveVideo} className="btn-gold">儲存錄影</button>
+            <button onClick={shareVideo} className="btn-gold">分享錄影</button>
+            <button onClick={reRecord} className="btn-outline">重新錄影</button>
+          </>
+        )}
       </div>
+
     </div>
   );
 }
