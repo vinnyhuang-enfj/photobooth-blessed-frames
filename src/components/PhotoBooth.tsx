@@ -166,14 +166,53 @@ export function PhotoBooth() {
     setMode("camera");
   };
 
+  const fileName = () => `BLIA2026-${Date.now()}.png`;
+
   const save = () => {
     if (!result) return;
     const a = document.createElement("a");
     a.href = result;
-    a.download = `BLIA2026-${Date.now()}.png`;
+    a.download = fileName();
     document.body.appendChild(a);
     a.click();
     a.remove();
+  };
+
+  const share = async () => {
+    if (!result) return;
+    try {
+      const blob = await (await fetch(result)).blob();
+      const file = new File([blob], fileName(), { type: "image/png" });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: "2026國際佛光會 與大師合影",
+          text: "2026國際佛光會 世界會員代表大會｜與大師合影",
+        });
+        return;
+      }
+      if (navigator.share) {
+        await navigator.share({
+          title: "2026國際佛光會 與大師合影",
+          text: "2026國際佛光會 世界會員代表大會｜與大師合影",
+          url: window.location.href,
+        });
+        return;
+      }
+      throw new Error("unsupported");
+    } catch (err) {
+      if ((err as { name?: string })?.name === "AbortError") return;
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        toast.error("此瀏覽器不支援直接分享相片", {
+          description: "網址已複製。請先按「儲存照片」，再到 LINE、Facebook、Instagram 或 Gmail 附上照片分享。",
+        });
+      } catch {
+        toast.error("此瀏覽器不支援直接分享相片", {
+          description: "請先按「儲存照片」，再到 LINE、Facebook、Instagram 或 Gmail 附上照片分享。",
+        });
+      }
+    }
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
@@ -336,6 +375,7 @@ export function PhotoBooth() {
         {mode === "preview" && (
           <>
             <button onClick={save} className="btn-gold">儲存照片</button>
+            <button onClick={share} className="btn-gold">分享照片</button>
             <button onClick={retake} className="btn-outline">重新拍照</button>
           </>
         )}
