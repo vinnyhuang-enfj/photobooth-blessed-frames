@@ -549,7 +549,15 @@ export function PhotoBooth() {
             <button onClick={retake} className="btn-outline">重新拍照</button>
           </>
         )}
+        {mode === "video" && (
+          <>
+            <button onClick={saveVideo} className="btn-gold">儲存錄影</button>
+            <button onClick={shareVideo} className="btn-gold">分享錄影</button>
+            <button onClick={reRecord} className="btn-outline">重新錄影</button>
+          </>
+        )}
       </div>
+
     </div>
   );
 }
