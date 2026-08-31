@@ -422,16 +422,36 @@ export function PhotoBooth() {
 
           {/* frame artwork always on top of the camera */}
           {mode === "camera" ? (
-            <img
-              src={frame.overlay}
-              alt="活動圖框"
-              className="pointer-events-none absolute inset-0 z-10 h-full w-full select-none object-contain"
-            />
+            <>
+              <img
+                src={frame.overlay}
+                alt="活動圖框"
+                className="pointer-events-none absolute inset-0 z-10 h-full w-full select-none object-contain"
+              />
+              {recording && (
+                <div className="pointer-events-none absolute left-1/2 top-3 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full bg-destructive px-3 py-1 text-xs font-bold text-destructive-foreground">
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-white" />
+                  錄影中 {countdown}s
+                </div>
+              )}
+            </>
+          ) : mode === "video" ? (
+            videoUrl && (
+              <video
+                src={videoUrl}
+                controls
+                autoPlay
+                loop
+                playsInline
+                className="absolute inset-0 h-full w-full object-contain"
+              />
+            )
           ) : (
             result && (
               <img src={result} alt="合成預覽" className="absolute inset-0 h-full w-full object-contain" />
             )
           )}
+
         </div>
       </div>
 
