@@ -77,9 +77,21 @@ export function PhotoBooth() {
   const [result, setResult] = useState<string | null>(null);
   const [status, setStatus] = useState<CamStatus>("idle");
   const [error, setError] = useState<CamError | null>(null);
+  const [recording, setRecording] = useState(false);
+  const [countdown, setCountdown] = useState(10);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
   const frame = FRAMES[frameIdx]!;
   const mirror = facing === "user";
+
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<BlobPart[]>([]);
+  const rafRef = useRef<number | null>(null);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const liveRef = useRef<{ frame: Frame; adjust: Adjust; mirror: boolean }>({ frame, adjust, mirror });
+  liveRef.current = { frame, adjust, mirror };
+  const videoExtRef = useRef("mp4");
+
 
   const startCamera = useCallback(async () => {
     setError(null);
