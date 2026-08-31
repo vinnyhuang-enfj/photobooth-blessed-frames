@@ -110,6 +110,38 @@ export function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
+/** synchronous single-frame composite used by both photo and video paths */
+export function drawComposite(
+  ctx: CanvasRenderingContext2D,
+  source: CanvasImageSource,
+  sw: number,
+  sh: number,
+  frame: Frame,
+  adjust: Adjust,
+  overlay: HTMLImageElement,
+  mirror = false,
+) {
+  const win: Rect = { ...frame.window };
+  ctx.clearRect(0, 0, frame.canvas.w, frame.canvas.h);
+  ctx.fillStyle = "#000";
+  ctx.fillRect(win.x, win.y, win.w, win.h);
+
+  const { dx, dy, dw, dh } = computeFit(win, sw, sh, adjust);
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(win.x, win.y, win.w, win.h);
+  ctx.clip();
+  if (mirror) {
+    ctx.translate(frame.canvas.w, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(source, frame.canvas.w - dx - dw, dy, dw, dh);
+  } else {
+    ctx.drawImage(source, dx, dy, dw, dh);
+  }
+  ctx.restore();
+  ctx.drawImage(overlay, 0, 0, frame.canvas.w, frame.canvas.h);
+}
+
 export async function composite(
   source: CanvasImageSource & { width?: number; height?: number },
   sw: number,
