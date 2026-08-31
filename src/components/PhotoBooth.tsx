@@ -6,12 +6,14 @@ import {
   Adjust,
   DEFAULT_ADJUST,
   FRAMES,
+  Frame,
   windowPct,
   composite,
+  drawComposite,
   loadImage,
 } from "@/lib/frames";
 
-type Mode = "camera" | "preview";
+type Mode = "camera" | "preview" | "video";
 type CamStatus = "idle" | "starting" | "ready" | "error";
 type CamError = {
   title: string;
