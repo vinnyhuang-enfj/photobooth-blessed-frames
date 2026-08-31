@@ -180,6 +180,126 @@ export function PhotoBooth() {
     setMode("camera");
   };
 
+  const cleanupRecording = () => {
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
+    timersRef.current.forEach(clearTimeout);
+    timersRef.current = [];
+  };
+
+  const stopRecording = useCallback(() => {
+    const rec = recorderRef.current;
+    if (rec && rec.state !== "inactive") rec.stop();
+  }, []);
+
+  const startRecording = async () => {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth || recording) return;
+    if (typeof MediaRecorder === "undefined") {
+      toast.error("此瀏覽器不支援錄影功能");
+      return;
+    }
+
+    const overlay = await loadImage(frame.overlay);
+    const cw = frame.canvas.w;
+    const ch = frame.canvas.h;
+    const scale = Math.min(1, 720 / Math.max(cw, ch));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(cw * scale);
+    canvas.height = Math.round(ch * scale);
+    const ctx = canvas.getContext("2d")!;
+
+    const draw = () => {
+      ctx.setTransform(scale, 0, 0, scale, 0, 0);
+      const { frame: f, adjust: a, mirror: m } = liveRef.current;
+      drawComposite(ctx, video, video.videoWidth, video.videoHeight, f, a, overlay, m);
+      rafRef.current = requestAnimationFrame(draw);
+    };
+    draw();
+
+    const candidates = [
+      "video/mp4;codecs=avc1",
+      "video/mp4",
+      "video/webm;codecs=vp9",
+      "video/webm;codecs=vp8",
+      "video/webm",
+    ];
+    const mime = candidates.find((t) => MediaRecorder.isTypeSupported?.(t)) ?? "";
+    videoExtRef.current = mime.includes("mp4") ? "mp4" : "webm";
+
+    const stream = canvas.captureStream(30);
+    const rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
+    chunksRef.current = [];
+    rec.ondataavailable = (e) => {
+      if (e.data.size) chunksRef.current.push(e.data);
+    };
+    rec.onstop = () => {
+      cleanupRecording();
+      setRecording(false);
+      const blob = new Blob(chunksRef.current, { type: mime || "video/webm" });
+      setVideoUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return URL.createObjectURL(blob);
+      });
+      setMode("video");
+      toast.success("錄影完成");
+    };
+    recorderRef.current = rec;
+    rec.start();
+    setRecording(true);
+    setCountdown(10);
+
+    for (let s = 1; s <= 10; s++) {
+      timersRef.current.push(setTimeout(() => setCountdown(10 - s), s * 1000));
+    }
+    timersRef.current.push(setTimeout(() => stopRecording(), 10_000));
+  };
+
+  useEffect(() => cleanupRecording, []);
+
+  const videoFileName = () => `BLIA2026-${Date.now()}.${videoExtRef.current}`;
+
+  const saveVideo = () => {
+    if (!videoUrl) return;
+    const a = document.createElement("a");
+    a.href = videoUrl;
+    a.download = videoFileName();
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
+  const shareVideo = async () => {
+    if (!videoUrl) return;
+    try {
+      const blob = await (await fetch(videoUrl)).blob();
+      const file = new File([blob], videoFileName(), { type: blob.type || "video/mp4" });
+      if (navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: "2026國際佛光會 與大師合影",
+          text: "2026國際佛光會 世界會員代表大會｜與大師合影",
+        });
+        return;
+      }
+      throw new Error("unsupported");
+    } catch (err) {
+      if ((err as { name?: string })?.name === "AbortError") return;
+      toast.error("此瀏覽器不支援直接分享影片", {
+        description: "請先按「儲存錄影」，再到 LINE、Facebook、Instagram 或 Gmail 附上影片分享。",
+      });
+    }
+  };
+
+  const reRecord = () => {
+    setVideoUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setMode("camera");
+  };
+
+
   const fileName = () => `BLIA2026-${Date.now()}.png`;
 
   const save = () => {
