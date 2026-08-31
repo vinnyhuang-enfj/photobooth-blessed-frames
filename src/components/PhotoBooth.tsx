@@ -479,20 +479,35 @@ export function PhotoBooth() {
 
 
       {mode === "camera" && (
-        <div className="flex justify-center gap-3">
-          <button
-            onClick={() => setFacing((f) => (f === "user" ? "environment" : "user"))}
-            className="btn-outline"
-          >
-            翻轉鏡頭
-          </button>
-          <button onClick={capture} className="btn-gold disabled:opacity-50" disabled={status !== "ready"}>
-            拍照
-          </button>
+        <div className="flex flex-wrap justify-center gap-3">
+          {recording ? (
+            <button onClick={stopRecording} className="btn-gold">
+              結束錄影
+            </button>
+          ) : (
+            <>
+              <button
+                onClick={() => setFacing((f) => (f === "user" ? "environment" : "user"))}
+                className="btn-outline"
+              >
+                翻轉鏡頭
+              </button>
+              <button onClick={capture} className="btn-gold disabled:opacity-50" disabled={status !== "ready"}>
+                拍照
+              </button>
+              <button
+                onClick={startRecording}
+                className="btn-gold disabled:opacity-50"
+                disabled={status !== "ready"}
+              >
+                錄影
+              </button>
+            </>
+          )}
         </div>
       )}
 
-      {mode === "camera" && (
+      {mode === "camera" && !recording && (
         <div>
           <p className="mb-2 text-sm font-semibold text-foreground">圖框樣式</p>
           <div className="grid grid-cols-3 gap-3">
@@ -511,6 +526,7 @@ export function PhotoBooth() {
           </div>
         </div>
       )}
+
 
       <div className="space-y-3 rounded-xl bg-card p-4 shadow-frame">
         <p className="text-sm font-semibold text-card-foreground">對位微調（可直接拖曳畫面）</p>
