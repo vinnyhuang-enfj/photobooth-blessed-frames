@@ -187,6 +187,8 @@ export function PhotoBooth() {
     rafRef.current = null;
     timersRef.current.forEach(clearTimeout);
     timersRef.current = [];
+    audioStreamRef.current?.getTracks().forEach((t) => t.stop());
+    audioStreamRef.current = null;
   };
 
   const stopRecording = useCallback(() => {
@@ -194,9 +196,19 @@ export function PhotoBooth() {
     if (rec && rec.state !== "inactive") rec.stop();
   }, []);
 
+  // stage 1: enter video mode (camera preview stays live, waiting for 開始錄影)
+  const armRecording = () => {
+    if (recording || status !== "ready") return;
+    setArmed(true);
+  };
+
+  const cancelArmed = () => setArmed(false);
+
+  // stage 2: actually start recording video + audio
   const startRecording = async () => {
     const video = videoRef.current;
     if (!video || !video.videoWidth || recording) return;
+    setArmed(false);
     if (typeof MediaRecorder === "undefined") {
       toast.error("此瀏覽器不支援錄影功能");
       return;
