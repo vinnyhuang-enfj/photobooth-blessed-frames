@@ -457,6 +457,11 @@ export function PhotoBooth() {
                   錄影中 {countdown}s
                 </div>
               )}
+              {armed && !recording && (
+                <div className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-xs font-bold text-primary-foreground">
+                  影片模式｜按「開始錄影」即錄影並錄製聲音
+                </div>
+              )}
             </>
           ) : mode === "video" ? (
             videoUrl && (
