@@ -241,7 +241,16 @@ export function PhotoBooth() {
     const mime = candidates.find((t) => MediaRecorder.isTypeSupported?.(t)) ?? "";
     videoExtRef.current = mime.includes("mp4") ? "mp4" : "webm";
 
+    // request microphone; recording continues silently if denied
+    try {
+      audioStreamRef.current = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    } catch {
+      audioStreamRef.current = null;
+      toast.warning("無法錄製聲音", { description: "已繼續錄影，但影片將沒有聲音。請確認麥克風權限。" });
+    }
+
     const stream = canvas.captureStream(30);
+    audioStreamRef.current?.getAudioTracks().forEach((t) => stream.addTrack(t));
     const rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
     chunksRef.current = [];
     rec.ondataavailable = (e) => {
