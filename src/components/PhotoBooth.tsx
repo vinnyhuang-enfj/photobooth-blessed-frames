@@ -507,6 +507,15 @@ export function PhotoBooth() {
             <button onClick={stopRecording} className="btn-gold">
               結束錄影
             </button>
+          ) : armed ? (
+            <>
+              <button onClick={startRecording} className="btn-gold">
+                開始錄影
+              </button>
+              <button onClick={cancelArmed} className="btn-outline">
+                取消
+              </button>
+            </>
           ) : (
             <>
               <button
@@ -519,7 +528,7 @@ export function PhotoBooth() {
                 拍照
               </button>
               <button
-                onClick={startRecording}
+                onClick={armRecording}
                 className="btn-gold disabled:opacity-50"
                 disabled={status !== "ready"}
               >
