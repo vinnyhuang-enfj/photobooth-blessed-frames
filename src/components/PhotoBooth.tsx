@@ -187,6 +187,8 @@ export function PhotoBooth() {
     rafRef.current = null;
     timersRef.current.forEach(clearTimeout);
     timersRef.current = [];
+    audioStreamRef.current?.getTracks().forEach((t) => t.stop());
+    audioStreamRef.current = null;
   };
 
   const stopRecording = useCallback(() => {
@@ -194,9 +196,19 @@ export function PhotoBooth() {
     if (rec && rec.state !== "inactive") rec.stop();
   }, []);
 
+  // stage 1: enter video mode (camera preview stays live, waiting for 開始錄影)
+  const armRecording = () => {
+    if (recording || status !== "ready") return;
+    setArmed(true);
+  };
+
+  const cancelArmed = () => setArmed(false);
+
+  // stage 2: actually start recording video + audio
   const startRecording = async () => {
     const video = videoRef.current;
     if (!video || !video.videoWidth || recording) return;
+    setArmed(false);
     if (typeof MediaRecorder === "undefined") {
       toast.error("此瀏覽器不支援錄影功能");
       return;
@@ -229,7 +241,16 @@ export function PhotoBooth() {
     const mime = candidates.find((t) => MediaRecorder.isTypeSupported?.(t)) ?? "";
     videoExtRef.current = mime.includes("mp4") ? "mp4" : "webm";
 
+    // request microphone; recording continues silently if denied
+    try {
+      audioStreamRef.current = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    } catch {
+      audioStreamRef.current = null;
+      toast.warning("無法錄製聲音", { description: "已繼續錄影，但影片將沒有聲音。請確認麥克風權限。" });
+    }
+
     const stream = canvas.captureStream(30);
+    audioStreamRef.current?.getAudioTracks().forEach((t) => stream.addTrack(t));
     const rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
     chunksRef.current = [];
     rec.ondataavailable = (e) => {
@@ -436,6 +457,11 @@ export function PhotoBooth() {
                   錄影中 {countdown}s
                 </div>
               )}
+              {armed && !recording && (
+                <div className="pointer-events-none absolute left-1/2 top-3 z-20 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-xs font-bold text-primary-foreground">
+                  影片模式｜按「開始錄影」即錄影並錄製聲音
+                </div>
+              )}
             </>
           ) : mode === "video" ? (
             videoUrl && (
@@ -486,6 +512,15 @@ export function PhotoBooth() {
             <button onClick={stopRecording} className="btn-gold">
               結束錄影
             </button>
+          ) : armed ? (
+            <>
+              <button onClick={startRecording} className="btn-gold">
+                開始錄影
+              </button>
+              <button onClick={cancelArmed} className="btn-outline">
+                取消
+              </button>
+            </>
           ) : (
             <>
               <button
@@ -498,7 +533,7 @@ export function PhotoBooth() {
                 拍照
               </button>
               <button
-                onClick={startRecording}
+                onClick={armRecording}
                 className="btn-gold disabled:opacity-50"
                 disabled={status !== "ready"}
               >
