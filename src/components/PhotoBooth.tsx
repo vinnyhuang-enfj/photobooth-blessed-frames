@@ -79,7 +79,7 @@ export function PhotoBooth() {
   const [error, setError] = useState<CamError | null>(null);
   const [recording, setRecording] = useState(false);
   const [armed, setArmed] = useState(false);
-  const [countdown, setCountdown] = useState(10);
+  const [countdown, setCountdown] = useState(5);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
   const frame = FRAMES[frameIdx]!;
@@ -270,12 +270,12 @@ export function PhotoBooth() {
     recorderRef.current = rec;
     rec.start();
     setRecording(true);
-    setCountdown(10);
+    setCountdown(5);
 
-    for (let s = 1; s <= 10; s++) {
-      timersRef.current.push(setTimeout(() => setCountdown(10 - s), s * 1000));
+    for (let s = 1; s <= 5; s++) {
+      timersRef.current.push(setTimeout(() => setCountdown(5 - s), s * 1000));
     }
-    timersRef.current.push(setTimeout(() => stopRecording(), 10_000));
+    timersRef.current.push(setTimeout(() => stopRecording(), 5_000));
   };
 
   useEffect(() => cleanupRecording, []);
