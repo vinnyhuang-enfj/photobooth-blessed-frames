@@ -565,6 +565,7 @@ export function PhotoBooth() {
       )}
 
 
+      {mode === "camera" && !recording && !armed && (
       <div className="space-y-3 rounded-xl bg-card p-4 shadow-frame">
         <p className="text-sm font-semibold text-card-foreground">對位微調（可直接拖曳畫面）</p>
         <Slider label="縮放" min={0.5} max={2} step={0.01} value={adjust.zoom} onChange={(v) => setAdjust((a) => ({ ...a, zoom: v }))} />
@@ -577,6 +578,7 @@ export function PhotoBooth() {
           置中還原
         </button>
       </div>
+      )}
 
       <div className="flex flex-wrap justify-center gap-3 pb-8">
         {mode === "preview" && (
