@@ -79,7 +79,7 @@ export function PhotoBooth() {
   const [error, setError] = useState<CamError | null>(null);
   const [recording, setRecording] = useState(false);
   const [armed, setArmed] = useState(false);
-  const [countdown, setCountdown] = useState(10);
+  const [countdown, setCountdown] = useState(5);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
 
   const frame = FRAMES[frameIdx]!;
