@@ -270,12 +270,12 @@ export function PhotoBooth() {
     recorderRef.current = rec;
     rec.start();
     setRecording(true);
-    setCountdown(10);
+    setCountdown(5);
 
-    for (let s = 1; s <= 10; s++) {
-      timersRef.current.push(setTimeout(() => setCountdown(10 - s), s * 1000));
+    for (let s = 1; s <= 5; s++) {
+      timersRef.current.push(setTimeout(() => setCountdown(5 - s), s * 1000));
     }
-    timersRef.current.push(setTimeout(() => stopRecording(), 10_000));
+    timersRef.current.push(setTimeout(() => stopRecording(), 5_000));
   };
 
   useEffect(() => cleanupRecording, []);
