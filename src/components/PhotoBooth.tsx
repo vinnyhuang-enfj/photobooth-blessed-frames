@@ -578,6 +578,7 @@ export function PhotoBooth() {
           置中還原
         </button>
       </div>
+      )}
 
       <div className="flex flex-wrap justify-center gap-3 pb-8">
         {mode === "preview" && (
