@@ -3,7 +3,6 @@ import { toast } from "sonner";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
-  Adjust,
   DEFAULT_ADJUST,
   FRAMES,
   Frame,
