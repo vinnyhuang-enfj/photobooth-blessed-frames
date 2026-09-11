@@ -540,20 +540,7 @@ export function PhotoBooth() {
       )}
 
 
-      {mode === "camera" && !recording && !armed && (
-      <div className="space-y-3 rounded-xl bg-card p-4 shadow-frame">
-        <p className="text-sm font-semibold text-card-foreground">對位微調（可直接拖曳畫面）</p>
-        <Slider label="縮放" min={0.5} max={2} step={0.01} value={adjust.zoom} onChange={(v) => setAdjust((a) => ({ ...a, zoom: v }))} />
-        <Slider label="水平" min={-0.5} max={0.5} step={0.005} value={adjust.offsetX} onChange={(v) => setAdjust((a) => ({ ...a, offsetX: v }))} />
-        <Slider label="垂直" min={-0.5} max={0.5} step={0.005} value={adjust.offsetY} onChange={(v) => setAdjust((a) => ({ ...a, offsetY: v }))} />
-        <button
-          onClick={() => setAdjust(DEFAULT_ADJUST)}
-          className="rounded-full border border-border px-4 py-1.5 text-xs text-card-foreground"
-        >
-          置中還原
-        </button>
-      </div>
-      )}
+      {mode === "camera" && !recording && !armed && null}
 
       <div className="flex flex-wrap justify-center gap-3 pb-8">
         {mode === "preview" && (
