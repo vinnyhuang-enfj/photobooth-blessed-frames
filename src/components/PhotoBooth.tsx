@@ -63,6 +63,48 @@ function describeError(err: unknown): CamError {
   }
 }
 
+const isAppleMobile = () =>
+  typeof navigator !== "undefined" &&
+  (/iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === "MacIntel" && (navigator as { maxTouchPoints?: number }).maxTouchPoints! > 1));
+
+/**
+ * iOS Safari ignores <a download>, so files never reach 相簿.
+ * Use the native share sheet (Save Image / Save Video) there, and fall back
+ * to a normal download on every other platform.
+ */
+async function saveToPhotos(url: string, name: string, mime: string, label: string) {
+  const download = () => {
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
+  if (!isAppleMobile()) {
+    download();
+    return;
+  }
+
+  try {
+    const blob = await (await fetch(url)).blob();
+    const file = new File([blob], name, { type: blob.type || mime });
+    if (navigator.canShare?.({ files: [file] })) {
+      await navigator.share({ files: [file] });
+      return;
+    }
+    throw new Error("unsupported");
+  } catch (err) {
+    if ((err as { name?: string })?.name === "AbortError") return;
+    // last resort: open in a new tab so the user can long-press to save
+    const win = window.open(url, "_blank");
+    if (!win) download();
+    toast.info(`請長按${label}後選擇「加入照片」以儲存到相簿`);
+  }
+}
+
 export function PhotoBooth() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -279,14 +321,14 @@ export function PhotoBooth() {
 
   const videoFileName = () => `BLIA2026-${Date.now()}.${videoExtRef.current}`;
 
-  const saveVideo = () => {
+  const saveVideo = async () => {
     if (!videoUrl) return;
-    const a = document.createElement("a");
-    a.href = videoUrl;
-    a.download = videoFileName();
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    await saveToPhotos(
+      videoUrl,
+      videoFileName(),
+      videoExtRef.current === "mp4" ? "video/mp4" : "video/webm",
+      "影片",
+    );
   };
 
   const shareVideo = async () => {
@@ -322,14 +364,9 @@ export function PhotoBooth() {
 
   const fileName = () => `BLIA2026-${Date.now()}.png`;
 
-  const save = () => {
+  const save = async () => {
     if (!result) return;
-    const a = document.createElement("a");
-    a.href = result;
-    a.download = fileName();
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
+    await saveToPhotos(result, fileName(), "image/png", "照片");
   };
 
   const share = async () => {
