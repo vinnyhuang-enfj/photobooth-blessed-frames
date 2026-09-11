@@ -369,24 +369,6 @@ export function PhotoBooth() {
     }
   };
 
-  const onPointerDown = (e: React.PointerEvent) => {
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    dragRef.current = { x: e.clientX, y: e.clientY, ox: adjust.offsetX, oy: adjust.offsetY };
-  };
-  const onPointerMove = (e: React.PointerEvent) => {
-    const d = dragRef.current;
-    if (!d) return;
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setAdjust((a) => ({
-      ...a,
-      offsetX: d.ox + (e.clientX - d.x) / rect.width,
-      offsetY: d.oy + (e.clientY - d.y) / rect.height,
-    }));
-  };
-  const onPointerUp = () => {
-    dragRef.current = null;
-  };
-
   const pct = windowPct(frame);
   // keep the camera strictly inside the window so the frame border stays visible
   const windowStyle = {
@@ -396,7 +378,7 @@ export function PhotoBooth() {
     height: `${pct.height}%`,
   };
 
-  const mediaTransform = `translate(${adjust.offsetX * 100}%, ${adjust.offsetY * 100}%) scale(${adjust.zoom})${mirror && mode === "camera" ? " scaleX(-1)" : ""}`;
+  const mediaTransform = `${mirror && mode === "camera" ? "scaleX(-1)" : ""}`;
 
   return (
     <div className="mx-auto w-full max-w-lg space-y-5">
