@@ -3,7 +3,6 @@ import { toast } from "sonner";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import {
-  Adjust,
   DEFAULT_ADJUST,
   FRAMES,
   Frame,
@@ -67,13 +66,11 @@ function describeError(err: unknown): CamError {
 export function PhotoBooth() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const dragRef = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
   const rawRef = useRef<HTMLImageElement | null>(null);
 
   const [frameIdx, setFrameIdx] = useState(0);
   const [facing, setFacing] = useState<"user" | "environment">("user");
   const [mode, setMode] = useState<Mode>("camera");
-  const [adjust, setAdjust] = useState<Adjust>(DEFAULT_ADJUST);
   const [result, setResult] = useState<string | null>(null);
   const [status, setStatus] = useState<CamStatus>("idle");
   const [error, setError] = useState<CamError | null>(null);
@@ -89,8 +86,8 @@ export function PhotoBooth() {
   const chunksRef = useRef<BlobPart[]>([]);
   const rafRef = useRef<number | null>(null);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const liveRef = useRef<{ frame: Frame; adjust: Adjust; mirror: boolean }>({ frame, adjust, mirror });
-  liveRef.current = { frame, adjust, mirror };
+  const liveRef = useRef<{ frame: Frame; mirror: boolean }>({ frame, mirror });
+  liveRef.current = { frame, mirror };
   const videoExtRef = useRef("mp4");
   const audioStreamRef = useRef<MediaStream | null>(null);
 
@@ -147,18 +144,18 @@ export function PhotoBooth() {
   }, [mode, startCamera]);
 
 
-  // re-composite whenever adjustments / frame change in preview mode
+  // re-composite whenever the frame changes in preview mode
   useEffect(() => {
     const img = rawRef.current;
     if (mode !== "preview" || !img) return;
     let alive = true;
-    composite(img, img.naturalWidth, img.naturalHeight, frame, adjust).then((url) => {
+    composite(img, img.naturalWidth, img.naturalHeight, frame, DEFAULT_ADJUST).then((url) => {
       if (alive) setResult(url);
     });
     return () => {
       alive = false;
     };
-  }, [mode, adjust, frame]);
+  }, [mode, frame]);
 
   const capture = async () => {
     const video = videoRef.current;
@@ -225,8 +222,8 @@ export function PhotoBooth() {
 
     const draw = () => {
       ctx.setTransform(scale, 0, 0, scale, 0, 0);
-      const { frame: f, adjust: a, mirror: m } = liveRef.current;
-      drawComposite(ctx, video, video.videoWidth, video.videoHeight, f, a, overlay, m);
+      const { frame: f, mirror: m } = liveRef.current;
+      drawComposite(ctx, video, video.videoWidth, video.videoHeight, f, DEFAULT_ADJUST, overlay, m);
       rafRef.current = requestAnimationFrame(draw);
     };
     draw();
@@ -372,24 +369,6 @@ export function PhotoBooth() {
     }
   };
 
-  const onPointerDown = (e: React.PointerEvent) => {
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    dragRef.current = { x: e.clientX, y: e.clientY, ox: adjust.offsetX, oy: adjust.offsetY };
-  };
-  const onPointerMove = (e: React.PointerEvent) => {
-    const d = dragRef.current;
-    if (!d) return;
-    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
-    setAdjust((a) => ({
-      ...a,
-      offsetX: d.ox + (e.clientX - d.x) / rect.width,
-      offsetY: d.oy + (e.clientY - d.y) / rect.height,
-    }));
-  };
-  const onPointerUp = () => {
-    dragRef.current = null;
-  };
-
   const pct = windowPct(frame);
   // keep the camera strictly inside the window so the frame border stays visible
   const windowStyle = {
@@ -399,7 +378,7 @@ export function PhotoBooth() {
     height: `${pct.height}%`,
   };
 
-  const mediaTransform = `translate(${adjust.offsetX * 100}%, ${adjust.offsetY * 100}%) scale(${adjust.zoom})${mirror && mode === "camera" ? " scaleX(-1)" : ""}`;
+  const mediaTransform = `${mirror && mode === "camera" ? "scaleX(-1)" : ""}`;
 
   return (
     <div className="mx-auto w-full max-w-lg space-y-5">
@@ -407,12 +386,8 @@ export function PhotoBooth() {
         <div className="relative w-full" style={{ aspectRatio: `${frame.canvas.w} / ${frame.canvas.h}` }}>
           {/* photo window (behind the frame artwork) */}
           <div
-            className="absolute overflow-hidden bg-black touch-none cursor-grab active:cursor-grabbing"
+            className="absolute overflow-hidden bg-black"
             style={windowStyle}
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-            onPointerCancel={onPointerUp}
           >
             {mode === "camera" ? (
               <video
@@ -565,21 +540,6 @@ export function PhotoBooth() {
       )}
 
 
-      {mode === "camera" && !recording && !armed && (
-      <div className="space-y-3 rounded-xl bg-card p-4 shadow-frame">
-        <p className="text-sm font-semibold text-card-foreground">對位微調（可直接拖曳畫面）</p>
-        <Slider label="縮放" min={0.5} max={2} step={0.01} value={adjust.zoom} onChange={(v) => setAdjust((a) => ({ ...a, zoom: v }))} />
-        <Slider label="水平" min={-0.5} max={0.5} step={0.005} value={adjust.offsetX} onChange={(v) => setAdjust((a) => ({ ...a, offsetX: v }))} />
-        <Slider label="垂直" min={-0.5} max={0.5} step={0.005} value={adjust.offsetY} onChange={(v) => setAdjust((a) => ({ ...a, offsetY: v }))} />
-        <button
-          onClick={() => setAdjust(DEFAULT_ADJUST)}
-          className="rounded-full border border-border px-4 py-1.5 text-xs text-card-foreground"
-        >
-          置中還原
-        </button>
-      </div>
-      )}
-
       <div className="flex flex-wrap justify-center gap-3 pb-8">
         {mode === "preview" && (
           <>
@@ -598,36 +558,5 @@ export function PhotoBooth() {
       </div>
 
     </div>
-  );
-}
-
-function Slider({
-  label,
-  min,
-  max,
-  step,
-  value,
-  onChange,
-}: {
-  label: string;
-  min: number;
-  max: number;
-  step: number;
-  value: number;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <label className="flex items-center gap-3 text-xs text-muted-foreground">
-      <span className="w-8 shrink-0">{label}</span>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="h-1 w-full accent-primary"
-      />
-    </label>
   );
 }
