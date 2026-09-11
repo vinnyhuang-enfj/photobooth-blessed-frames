@@ -144,18 +144,18 @@ export function PhotoBooth() {
   }, [mode, startCamera]);
 
 
-  // re-composite whenever adjustments / frame change in preview mode
+  // re-composite whenever the frame changes in preview mode
   useEffect(() => {
     const img = rawRef.current;
     if (mode !== "preview" || !img) return;
     let alive = true;
-    composite(img, img.naturalWidth, img.naturalHeight, frame, adjust).then((url) => {
+    composite(img, img.naturalWidth, img.naturalHeight, frame, DEFAULT_ADJUST).then((url) => {
       if (alive) setResult(url);
     });
     return () => {
       alive = false;
     };
-  }, [mode, adjust, frame]);
+  }, [mode, frame]);
 
   const capture = async () => {
     const video = videoRef.current;
