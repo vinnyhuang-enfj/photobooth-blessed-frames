@@ -222,8 +222,8 @@ export function PhotoBooth() {
 
     const draw = () => {
       ctx.setTransform(scale, 0, 0, scale, 0, 0);
-      const { frame: f, adjust: a, mirror: m } = liveRef.current;
-      drawComposite(ctx, video, video.videoWidth, video.videoHeight, f, a, overlay, m);
+      const { frame: f, mirror: m } = liveRef.current;
+      drawComposite(ctx, video, video.videoWidth, video.videoHeight, f, DEFAULT_ADJUST, overlay, m);
       rafRef.current = requestAnimationFrame(draw);
     };
     draw();
