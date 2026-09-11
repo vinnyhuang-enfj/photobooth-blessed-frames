@@ -386,12 +386,8 @@ export function PhotoBooth() {
         <div className="relative w-full" style={{ aspectRatio: `${frame.canvas.w} / ${frame.canvas.h}` }}>
           {/* photo window (behind the frame artwork) */}
           <div
-            className="absolute overflow-hidden bg-black touch-none cursor-grab active:cursor-grabbing"
+            className="absolute overflow-hidden bg-black"
             style={windowStyle}
-            onPointerDown={onPointerDown}
-            onPointerMove={onPointerMove}
-            onPointerUp={onPointerUp}
-            onPointerCancel={onPointerUp}
           >
             {mode === "camera" ? (
               <video
