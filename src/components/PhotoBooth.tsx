@@ -560,34 +560,3 @@ export function PhotoBooth() {
     </div>
   );
 }
-
-function Slider({
-  label,
-  min,
-  max,
-  step,
-  value,
-  onChange,
-}: {
-  label: string;
-  min: number;
-  max: number;
-  step: number;
-  value: number;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <label className="flex items-center gap-3 text-xs text-muted-foreground">
-      <span className="w-8 shrink-0">{label}</span>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="h-1 w-full accent-primary"
-      />
-    </label>
-  );
-}
