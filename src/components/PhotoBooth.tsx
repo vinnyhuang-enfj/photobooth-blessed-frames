@@ -540,8 +540,6 @@ export function PhotoBooth() {
       )}
 
 
-      {mode === "camera" && !recording && !armed && null}
-
       <div className="flex flex-wrap justify-center gap-3 pb-8">
         {mode === "preview" && (
           <>
