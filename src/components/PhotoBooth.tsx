@@ -66,13 +66,11 @@ function describeError(err: unknown): CamError {
 export function PhotoBooth() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const dragRef = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
   const rawRef = useRef<HTMLImageElement | null>(null);
 
   const [frameIdx, setFrameIdx] = useState(0);
   const [facing, setFacing] = useState<"user" | "environment">("user");
   const [mode, setMode] = useState<Mode>("camera");
-  const [adjust, setAdjust] = useState<Adjust>(DEFAULT_ADJUST);
   const [result, setResult] = useState<string | null>(null);
   const [status, setStatus] = useState<CamStatus>("idle");
   const [error, setError] = useState<CamError | null>(null);
@@ -88,8 +86,8 @@ export function PhotoBooth() {
   const chunksRef = useRef<BlobPart[]>([]);
   const rafRef = useRef<number | null>(null);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const liveRef = useRef<{ frame: Frame; adjust: Adjust; mirror: boolean }>({ frame, adjust, mirror });
-  liveRef.current = { frame, adjust, mirror };
+  const liveRef = useRef<{ frame: Frame; mirror: boolean }>({ frame, mirror });
+  liveRef.current = { frame, mirror };
   const videoExtRef = useRef("mp4");
   const audioStreamRef = useRef<MediaStream | null>(null);
 
