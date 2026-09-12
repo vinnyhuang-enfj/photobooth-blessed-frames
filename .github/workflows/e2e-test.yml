@@ -29,12 +29,9 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: 執行自動化測試並錄製操作過程
-        continue-on-error: true # 確保即使測試有斷言未過，依然能產出並上傳報告
+        continue-on-error: true
         run: |
-          npx playwright test tests/photobooth.spec.ts \
-            --reporter=html \
-            --video=on \
-            --trace=on
+          npx playwright test tests/photobooth.spec.ts --reporter=html --trace=on
 
       - name: 上傳測試成果與影片報告 (Artifact)
         if: always()
