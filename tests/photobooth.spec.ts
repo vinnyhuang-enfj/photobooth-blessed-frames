@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 
 // 啟用虛擬攝影機與麥克風，繞過權限彈窗
 test.use({
+  video: 'on', // 自動開啟整個測試過程的畫面錄影
   launchOptions: {
     args: [
       '--use-fake-ui-for-media-stream',
