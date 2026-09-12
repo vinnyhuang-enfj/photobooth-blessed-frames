@@ -19,7 +19,6 @@ test.describe('與大師合影 - 完整自動化功能測試', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto(TARGET_URL, { waitUntil: 'networkidle', timeout: 45000 });
 
-    // 點擊進入「與大師合影」功能
     const enterFeature = page.getByRole('button', { name: /與大師合影/i })
       .or(page.getByText('與大師合影'));
     if (await enterFeature.count() > 0) {
@@ -29,9 +28,8 @@ test.describe('與大師合影 - 完整自動化功能測試', () => {
   });
 
   test('測試 1：選擇 6 個圖框進行「拍照」並驗證「儲存照片」與「分享照片」', async ({ page }) => {
-    test.setTimeout(120000); // 延長為 2 分鐘
+    test.setTimeout(120000);
 
-    // 自動偵測圖框列表（支援各類圖框縮圖容器）
     const frameElements = page.locator('img[src*="frame"], .cursor-pointer:has(img), [role="radio"], button:has(img), .frame-item');
     const totalFrames = await frameElements.count();
     const testCount = totalFrames > 0 ? Math.min(totalFrames, TARGET_FRAME_COUNT) : TARGET_FRAME_COUNT;
@@ -47,55 +45,61 @@ test.describe('與大師合影 - 完整自動化功能測試', () => {
         await page.waitForTimeout(600);
       }
 
-      // 2. 切換至拍照模式（若有分頁按鈕）
-      const photoTab = page.locator('button, [role="tab"]').filter({ hasText: /拍照/ }).first();
+      // 2. 切換至拍照分頁
+      const photoTab = page.locator('[role="tab"], button').filter({ hasText: /^拍照$/ }).first();
       if (await photoTab.count() > 0 && await photoTab.isVisible()) {
         await photoTab.click();
+        await page.waitForTimeout(500);
       }
 
-      // 3. 點擊拍照快門按鈕（支援文字、Icon、圓形快門）
-      const shutterBtn = page.locator('button.rounded-full, button:has(svg.lucide-camera), button')
-        .filter({ hasText: /拍照|快門|拍攝|Capture/i })
-        .or(page.locator('button:has(svg)').filter({ hasNotText: /切換|重置|Back|返回/ }))
-        .first();
+      // 3. 點擊正下方的快門按鈕（排除切換標籤）
+      const shutterBtn = page.locator('button:not([role="tab"])')
+        .filter({ hasText: /開始拍照|拍一張|拍攝|快門/ })
+        .or(page.locator('button.rounded-full:not([role="tab"])'))
+        .or(page.locator('button:has(svg.lucide-camera)'))
+        .or(page.locator('button:not([role="tab"]):has(svg)').filter({ hasNotText: /攝影|錄影|切換|重置|Back|返回/ }))
+        .last();
 
-      await expect(shutterBtn).toBeVisible({ timeout: 10000 });
+      await expect(shutterBtn).toBeVisible({ timeout: 8000 });
       await shutterBtn.click();
-      await page.waitForTimeout(1500);
+      console.log(`✓ 圖框 #${i + 1} 已點擊快門，等待倒數與圖片合成...`);
 
-      // 4. 驗證「儲存照片」
-      const saveBtn = page.getByRole('button', { name: /儲存照片|下載照片|下載/i }).or(page.getByText('儲存照片'));
-      await expect(saveBtn.first()).toBeVisible({ timeout: 8000 });
+      // 4. 等待倒數計時（3秒）與 Canvas 合成
+      await page.waitForTimeout(4000);
+
+      // 5. 驗證「儲存照片」
+      const saveBtn = page.locator('button').filter({ hasText: /儲存照片|下載照片|儲存圖片|下載/i }).first();
+      await expect(saveBtn).toBeVisible({ timeout: 15000 });
 
       const [download] = await Promise.all([
-        page.waitForEvent('download', { timeout: 4000 }).catch(() => null),
-        saveBtn.first().click(),
+        page.waitForEvent('download', { timeout: 5000 }).catch(() => null),
+        saveBtn.click(),
       ]);
 
       if (download) {
-        console.log(`✓ 圖框 #${i + 1} [儲存照片] 成功觸發下載: ${download.suggestedFilename()}`);
+        console.log(`✓ 圖框 #${i + 1} [儲存照片] 下載成功: ${download.suggestedFilename()}`);
       } else {
-        console.log(`✓ 圖框 #${i + 1} [儲存照片] 觸發儲存面板/影像生成成功`);
+        console.log(`✓ 圖框 #${i + 1} [儲存照片] 觸發儲存操作成功`);
       }
 
-      // 5. 驗證「分享照片」
-      const shareBtn = page.getByRole('button', { name: /分享照片|分享/i }).or(page.getByText('分享照片'));
+      // 6. 驗證「分享照片」
+      const shareBtn = page.locator('button').filter({ hasText: /分享照片|分享圖片|分享/i }).first();
       if (await shareBtn.count() > 0) {
-        await shareBtn.first().click();
-        console.log(`✓ 圖框 #${i + 1} [分享照片] 按鈕觸發成功`);
+        await shareBtn.click();
+        console.log(`✓ 圖框 #${i + 1} [分享照片] 按鈕觸發正常`);
       }
 
-      // 6. 重置回拍照準備狀態
-      const retakeBtn = page.getByRole('button', { name: /重新|再拍一張|重置|Back|返回/i });
+      // 7. 重置回拍照準備狀態
+      const retakeBtn = page.locator('button').filter({ hasText: /重新|再拍一張|重置|Back|返回/i }).first();
       if (await retakeBtn.count() > 0) {
-        await retakeBtn.first().click();
+        await retakeBtn.click();
         await page.waitForTimeout(800);
       }
     }
   });
 
   test('測試 2：選擇 6 個圖框進行「攝影」並驗證「儲存錄影」與「分享錄影」', async ({ page }) => {
-    test.setTimeout(120000); // 延長為 2 分鐘，確保 6 個圖框錄影完整執行
+    test.setTimeout(120000);
 
     const frameElements = page.locator('img[src*="frame"], .cursor-pointer:has(img), [role="radio"], button:has(img), .frame-item');
     const totalFrames = await frameElements.count();
@@ -123,7 +127,6 @@ test.describe('與大師合影 - 完整自動化功能測試', () => {
       await expect(recordBtn).toBeVisible({ timeout: 5000 });
       await recordBtn.click();
 
-      // 錄製約 2 秒
       await page.waitForTimeout(2000);
 
       // 4. 結束錄影
