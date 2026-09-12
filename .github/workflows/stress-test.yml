@@ -1,0 +1,48 @@
+name: Run k6 Stress Test
+
+on:
+  workflow_dispatch: # 支援在 GitHub 網頁上手動按按鈕執行
+
+jobs:
+  k6_test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 簽出專案
+        uses: actions/checkout@v4
+
+      - name: 建立 k6 壓測腳本
+        run: |
+          cat << 'EOF' > load-test.js
+          import http from 'k6/http';
+          import { check, sleep } from 'k6';
+
+          export const options = {
+            stages: [
+              { duration: '30s', target: 50 },   // 30秒內爬升至 50 人
+              { duration: '1m', target: 200 },   // 1分鐘內加壓至 200 人
+              { duration: '1m', target: 500 },   // 1分鐘內加壓至 500 人
+              { duration: '30s', target: 0 },    // 降載
+            ],
+            thresholds: {
+              http_req_failed: ['rate<0.01'],    // 錯誤率需低於 1%
+              http_req_duration: ['p(95)<3000'], // 95% 請求需在 3 秒內完成
+            },
+          };
+
+          export default function () {
+            const res = http.get('https://photobooth-blessed-frames.lovable.app/');
+            check(res, {
+              '首頁回應 200 OK': (r) => r.status === 200,
+            });
+            sleep(1);
+          }
+          EOF
+
+      - name: 安裝並執行 k6 壓力測試
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install -y k6
+          k6 run load-test.js
