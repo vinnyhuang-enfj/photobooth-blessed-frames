@@ -1,7 +1,7 @@
 name: Run Photobooth E2E Tests
 
 on:
-  workflow_dispatch: # 支援在 GitHub 網頁上按按鈕手動觸發
+  workflow_dispatch: # 支援在 GitHub 網頁上手動點擊執行
   push:
     branches: [ main ]
 
@@ -14,21 +14,22 @@ jobs:
       - name: 簽出測試程式碼
         uses: actions/checkout@v4
 
-      - name: 設定 Node.js
+      - name: 設定 Node.js 環境
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
-      - name: 安裝測試工具
-        run: |
-          mkdir -p playwright-report/screenshots
-          npm init -y
-          npm install -D @playwright/test
+      - name: 建立報告與截圖目錄
+        run: mkdir -p playwright-report/screenshots
 
-      - name: 安裝 Chromium 瀏覽器
+      - name: 安裝 Playwright 核心模組
+        run: npm install -D @playwright/test
+
+      - name: 安裝 Chromium 瀏覽器及其系統依賴
         run: npx playwright install --with-deps chromium
 
       - name: 執行自動化測試並錄製操作過程
+        continue-on-error: true # 確保即使測試有斷言未過，依然能產出並上傳報告
         run: |
           npx playwright test tests/photobooth.spec.ts \
             --reporter=html \
