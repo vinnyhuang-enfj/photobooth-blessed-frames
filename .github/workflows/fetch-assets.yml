@@ -13,20 +13,93 @@ jobs:
     steps:
       - name: 簽出專案
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 下載 Lovable 活動主圖
+      - name: 安裝瀏覽器掃描工具
         run: |
-          mkdir -p public/__l5e/assets-v1/c514f3e6-5b3c-4429-9676-78c97005b5bf/
-          curl -sL "https://photobooth-blessed-frames.lovable.app/__l5e/assets-v1/c514f3e6-5b3c-4429-9676-78c97005b5bf/event.jpg" \
-            -o "public/__l5e/assets-v1/c514f3e6-5b3c-4429-9676-78c97005b5bf/event.jpg"
-          echo "Assets fetched" > public/__l5e/status.txt
+          npm install -D @playwright/test
+          npx playwright install --with-deps chromium
 
-      - name: 自動提交圖檔至 main 分支
+      - name: 自動深入頁面抓取所有 6 款圖框與大圖
+        run: |
+          node -e '
+          const { chromium } = require("@playwright/test");
+          const fs = require("fs");
+          const path = require("path");
+          const https = require("https");
+
+          function downloadFile(url, dest) {
+            return new Promise((resolve, reject) => {
+              fs.mkdirSync(path.dirname(dest), { recursive: true });
+              const file = fs.createWriteStream(dest);
+              https.get(url, (res) => {
+                if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+                  return downloadFile(res.headers.location, dest).then(resolve).catch(reject);
+                }
+                res.pipe(file);
+                file.on("finish", () => file.close(resolve));
+              }).on("error", (err) => {
+                fs.unlink(dest, () => {});
+                reject(err);
+              });
+            });
+          }
+
+          (async () => {
+            const browser = await chromium.launch();
+            const page = await browser.newPage();
+            console.log("進入 Lovable 網站開始掃描圖框...");
+            await page.goto("https://photobooth-blessed-frames.lovable.app/", { waitUntil: "networkidle", timeout: 45000 });
+
+            // 點擊與大師合影
+            const btn = page.getByRole("button", { name: /與大師合影/i }).or(page.getByText("與大師合影"));
+            if (await btn.count() > 0) {
+              await btn.first().click();
+              await page.waitForTimeout(2500);
+            }
+
+            const imgUrls = new Set();
+
+            // 掃描當前頁面所有圖片（包含大圖框、預覽圖）
+            const currentImgs = await page.locator("img").evaluateAll(els => els.map(e => e.src));
+            currentImgs.forEach(u => imgUrls.add(u));
+
+            // 點選每一個圖框按鈕，抓出切換後的所有大圖框
+            const frameButtons = page.locator("img[src*=\"frame\"], .cursor-pointer:has(img), [role=\"radio\"], button:has(img), .frame-item");
+            const count = await frameButtons.count();
+            console.log(`偵測到 ${count} 個圖框切換鈕，正在依序觸發抓取...`);
+
+            for (let i = 0; i < count; i++) {
+              await frameButtons.nth(i).click({ force: true });
+              await page.waitForTimeout(600);
+              const activeImgs = await page.locator("img").evaluateAll(els => els.map(e => e.src));
+              activeImgs.forEach(u => imgUrls.add(u));
+            }
+
+            const validUrls = [...imgUrls].filter(u => u && u.startsWith("http"));
+            console.log(`總共成功掃描到 ${validUrls.length} 個圖片資源！`);
+
+            for (const imgUrl of validUrls) {
+              const u = new URL(imgUrl);
+              const cleanPath = u.pathname.replace(/^\/+/, "");
+              const localPath = path.join("public", cleanPath);
+              console.log(`正在下載: ${imgUrl} -> ${localPath}`);
+              try {
+                await downloadFile(imgUrl, localPath);
+                console.log(`✓ 已成功下載: ${localPath}`);
+              } catch (e) {
+                console.warn(`下載失敗: ${imgUrl}`, e.message);
+              }
+            }
+
+            await browser.close();
+            console.log("所有大師圖框與素材下載完成！");
+          })();
+          '
+
+      - name: 自動提交所有圖檔至 main 分支
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add public/
-          git commit -m "feat: download and host lovable assets locally" || exit 0
+          git commit -m "feat: download all master frames and thumbnails" || exit 0
           git push origin main
