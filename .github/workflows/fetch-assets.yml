@@ -1,24 +1,27 @@
 name: Auto Fetch Lovable Assets
 
 on:
-  workflow_dispatch: # 手動觸發
+  workflow_dispatch:
+  push:
+    branches: [ main ]
 
 jobs:
   download_assets:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: 簽出專案
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: 下載 Lovable 活動主圖與大師圖框
+      - name: 下載 Lovable 活動主圖
         run: |
           mkdir -p public/__l5e/assets-v1/c514f3e6-5b3c-4429-9676-78c97005b5bf/
-          # 下載活動主圖
           curl -sL "https://photobooth-blessed-frames.lovable.app/__l5e/assets-v1/c514f3e6-5b3c-4429-9676-78c97005b5bf/event.jpg" \
             -o "public/__l5e/assets-v1/c514f3e6-5b3c-4429-9676-78c97005b5bf/event.jpg"
-          
-          # 建立靜態圖檔保護
-          echo "Assets fetched successfully" > public/__l5e/status.txt
+          echo "Assets fetched" > public/__l5e/status.txt
 
       - name: 自動提交圖檔至 main 分支
         run: |
