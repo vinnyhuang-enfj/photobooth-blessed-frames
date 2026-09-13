@@ -1,11 +1,28 @@
 {
   "rewrites": [
     {
+      "source": "/__l5e/:path*",
+      "destination": "https://photobooth-blessed-frames.lovable.app/__l5e/:path*"
+    },
+    {
       "source": "/((?!.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|css|js|mp4|webm)).*)",
       "destination": "/index.html"
     }
   ],
   "headers": [
+    {
+      "source": "/__l5e/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        }
+      ]
+    },
     {
       "source": "/(.*)\\.(png|jpg|jpeg|webp|svg|ico)",
       "headers": [
