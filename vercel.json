@@ -1,26 +1,21 @@
 {
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/((?!.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|css|js|mp4|webm)).*)",
       "destination": "/index.html"
     }
   ],
   "headers": [
     {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Cache-Control",
-          "value": "public, max-age=0, s-maxage=31536000, must-revalidate"
-        }
-      ]
-    },
-    {
-      "source": "/(.*).(png|jpg|jpeg|webp|svg|ico|js|css)",
+      "source": "/(.*)\\.(png|jpg|jpeg|webp|svg|ico)",
       "headers": [
         {
           "key": "Cache-Control",
           "value": "public, max-age=31536000, immutable"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
         }
       ]
     }
