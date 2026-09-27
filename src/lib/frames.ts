@@ -2,14 +2,14 @@ import frame01 from "@/assets/frame01.jpg.asset.json";
 import frame02 from "@/assets/frame02.jpg.asset.json";
 import frame03 from "@/assets/frame03.jpg.asset.json";
 import frame04 from "@/assets/frame04.jpg.asset.json";
-import frame05 from "@/assets/frame05.jpg.asset.json";
-import frame06 from "@/assets/frame06.jpg.asset.json";
+import frame05 from "@/assets/frame05-replacement.jpg.asset.json";
+import frame06 from "@/assets/frame06-replacement.jpg.asset.json";
 import frame01Hole from "@/assets/frame01-hole.png.asset.json";
 import frame02Hole from "@/assets/frame02-hole.png.asset.json";
 import frame03Hole from "@/assets/frame03-hole.png.asset.json";
 import frame04Hole from "@/assets/frame04-hole.png.asset.json";
-import frame05Hole from "@/assets/frame05-hole.png.asset.json";
-import frame06Hole from "@/assets/frame06-hole.png.asset.json";
+import frame05Hole from "@/assets/frame05-replacement-hole.png.asset.json";
+import frame06Hole from "@/assets/frame06-replacement-hole.png.asset.json";
 
 export type Rect = { x: number; y: number; w: number; h: number };
 
@@ -63,7 +63,7 @@ export const FRAMES: Frame[] = [
     url: frame05.url,
     overlay: frame05Hole.url,
     canvas: { w: 1920, h: 1920 },
-    window: { x: 109, y: 128, w: 1811, h: 1656 },
+    window: { x: 111, y: 211, w: 1700, h: 1573 },
   },
   {
     id: "frame06",
@@ -71,7 +71,7 @@ export const FRAMES: Frame[] = [
     url: frame06.url,
     overlay: frame06Hole.url,
     canvas: { w: 1920, h: 1920 },
-    window: { x: 222, y: 112, w: 1475, h: 1355 },
+    window: { x: 223, y: 112, w: 1473, h: 1241 },
   },
 ];
 
